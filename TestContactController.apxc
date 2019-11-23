@@ -1,0 +1,332 @@
+@isTest public class TestContactController {
+    
+	@isTest
+    // test list size
+    static void testGetContact(){
+    	VFContactController testCont = new VFContactController();
+        testCont.getContact();
+        System.AssertEquals( testCont.results.size(), testCont.totalSize);
+    }
+ 
+    // test sort methods
+    @isTest public static void testSortMethods(){
+        
+        VFContactController cont = new VFContactController();
+        
+        cont.sortByName();
+        System.AssertEquals('asc', cont.sortDirection);
+        
+        cont.sortByEmail();
+        System.AssertEquals('desc', cont.sortDirection);
+        
+        cont.sortByContactLevel();
+        System.AssertEquals('asc', cont.sortDirection);
+        
+        cont.sortByAccountId();
+        System.AssertEquals('desc', cont.sortDirection);
+        
+        cont.sortByOwnerId();
+        System.AssertEquals('asc', cont.sortDirection);
+        
+        cont.sortByCreatedById();
+        System.AssertEquals('desc', cont.sortDirection);
+        
+        cont.sortByCreatedDate();
+        System.AssertEquals('asc', cont.sortDirection);
+
+        
+    }
+     // test pagination methods
+    @isTest public static void testPaginationMethods(){
+        
+        VFContactController cont = new VFContactController();
+        System.AssertEquals(10, cont.listSize); //check default rows number
+        
+        cont.counter = 0;
+        cont.getDisablePrevious();
+        System.AssertEquals(true, cont.getDisablePrevious(), 'getDisablePrevious');
+        
+        cont.counter = 10;
+        cont.getDisablePrevious();
+        System.AssertEquals(false, cont.getDisablePrevious(), 'getDisablePrevious');
+
+        cont.Beginning();
+        System.AssertEquals(0, cont.counter, 'Begining');
+        System.AssertEquals('0', cont.count, 'Begining');
+        
+        Integer prevCounter = cont.counter - cont.listSize;
+        String prevCount = String.valueOf(prevCounter);
+        cont.Previous();
+        System.AssertEquals(prevCounter, cont.counter, 'Previous');
+        System.AssertEquals(prevCount, cont.count, 'Previous');
+        
+        Integer nextCounter = cont.counter + cont.listSize;
+        String nextCount = String.valueOf(nextCounter);
+        cont.Next();
+        System.AssertEquals(nextCounter, cont.counter, 'Next');
+        System.AssertEquals(nextCount, cont.count, 'Next');
+        
+        Integer endCounter = cont.totalSize - math.mod(cont.totalSize, cont.listSize);
+        String endCount = String.valueOf(endCounter);
+		cont.End();       
+        System.AssertEquals(endCounter, cont.counter, 'End');
+        System.AssertEquals(endCount, cont.count, 'End');
+        
+        cont.counter = 0;
+        System.AssertEquals(true, cont.getDisablePrevious(), 'getDisabledPrevious');
+        
+        cont.counter = 5;
+        System.AssertEquals(false, cont.getDisablePrevious(), 'getDisabledPrevious');
+        
+        cont.listSize = 10;
+        cont.goPage = 5;
+        cont.totalSize = 100;
+        cont.goToPage();
+        System.AssertEquals('40', cont.count, 'Go to page');
+        
+        
+        cont.goPage = 15;
+        cont.goToPage();
+        System.AssertEquals('1', cont.count, 'Wrong goPage');
+        
+        cont.goPage = -5;
+        cont.goToPage();
+        System.AssertEquals('1', cont.count, 'Wrong goPage');
+        
+        System.AssertEquals(100, cont.getTotalSize(), 'GetTotalSize');
+        
+        cont.counter = 100;
+    	cont.getPageNumber(); 
+        System.AssertEquals(11, cont.getPageNumber(), 'Get page number');
+        
+        cont.listSize = 5;
+        System.AssertEquals(20, cont.getTotalPages(), 'Get Total Pages true');
+        
+        cont.listSize = 8;
+        System.AssertEquals(13, cont.getTotalPages(), 'Get Total Pages false block');
+        
+        cont.counter = 5;
+        cont.listSize = 10;
+        cont.totalSize = 8;
+        System.AssertEquals(true, cont.getDisableNext(), 'getDisableNext');
+        
+        cont.totalSize = 20;
+        System.AssertEquals(false, cont.getDisableNext(), 'getDisableNext');
+     
+     }
+    
+	//Test go full table button method
+	
+    @isTest public static void testGoFullTable(){
+        
+      	VFContactController cont = new VFContactController();
+     	cont.goFullTable();
+	 	System.AssertEquals(null, cont.query, 'searchProductName');
+     	System.AssertEquals(0, cont.counter, 'searchProductName');
+     	System.AssertEquals(10, cont.listSize, 'searchProductName');
+     	System.AssertEquals(0, cont.totalSize, 'searchProductName');
+        
+    }
+    
+    //test search method
+    
+    @isTest public static void testSearchProductName(){
+        
+     	VFContactController cont = new VFContactController();
+     	Boolean isNull = true;
+     	cont.searchName = 'Test';
+     	cont.query = null;
+     	cont.searchContactName();
+        
+     	if(cont.query != null){
+         	isNull = false;
+         	System.AssertEquals(false, isNull, 'searchProductName');
+     	} 
+        
+     	cont.searchName = '';
+     	cont.query = null;
+     	cont.searchContactName();
+        
+     	if(cont.query == null){
+     		System.AssertEquals(true, cont.detectMess, 'searchProductName');
+     	}
+ 	}
+    
+    // test delete method
+    
+   @isTest public static void testDel(){
+    
+    	List<Contact> beforeDel = new List<Contact>();
+    	List<Contact> afterDel = new List<Contact>(); 
+       
+    	VFContactController cont = new VFContactController();
+       
+        Contact testDelContact = new Contact(
+            						 FirstName = 'testDelContact',
+                                     LastName  = 'first'
+        							 );
+        insert testDelContact;
+       
+        List<Contact> testDelList = [
+            		  SELECT ID 
+            		  FROM 	 Contact 
+                      WHERE  FirstName = 'testDelContact'
+        			  ];
+       
+        cont.contactId = testDelList[0].id;
+    	
+        beforeDel = [
+            SELECT ID 
+            FROM   Contact
+        ];
+    
+    	cont.delContact(); 
+    
+    	afterDel = [
+            SELECT ID 
+            FROM   Contact
+        ];
+       
+    	System.AssertNotEquals(beforeDel, afterDel, 'List before != list after delete');
+       
+        cont.contactId = null;
+        cont.delContact();
+        System.AssertEquals(true, cont.detectMess, 'Delete Error');
+
+    }
+    
+    // Save after edit test
+    
+    @isTest public static void testSaveEdit(){
+        
+        List<Contact> beforeUpdate = new List<Contact>();
+    	List<Contact> afterUpdate = new List<Contact>(); 
+        
+        VFContactController cont = new VFContactController();
+
+        Contact testUpdateContact = new Contact(
+            						 FirstName = 'testDelContact',
+                                     LastName  = 'first',
+             						 Email 	   = 'Email@Email.by'
+        							 );
+        insert testUpdateContact;
+        
+        cont.getContact();
+         
+        beforeUpdate = [
+            SELECT Email 
+            FROM   Contact
+        ];
+        
+        cont.results[0].Email = 'ChangeEmail@Email.by';
+    	cont.saveRecordsAfterEdit(); 
+    
+    	afterUpdate = [
+            SELECT Email 
+            FROM   Contact
+        ];
+       
+         System.AssertNotEquals(afterUpdate, beforeUpdate, 'Update method Success.');
+
+      }
+    
+    // Test custom set size table
+    
+     @isTest public static void testRowSizeSet(){
+         
+         VFContactController cont = new VFContactController();
+         cont.rowSize = 0;
+         cont.rowSizeSet();
+         System.AssertEquals(true, cont.detectMess);
+         
+         cont.rowSize = 20;
+         cont.rowSizeSet();
+         System.AssertEquals(20, cont.listSize);
+         System.AssertEquals(false, cont.detectMess);
+         
+         cont.rowSize = 60;
+         cont.rowSizeSet();
+         System.AssertEquals(true, cont.detectMess);
+         
+     }
+    
+    // test popup block showing
+    
+    @isTest public static void testPopupMethods(){
+        VFContactController cont = new VFContactController();
+        cont.closePopup(); 
+		System.AssertEquals(false, cont.displayPopup);
+	    cont.showPopup(); 
+		System.AssertEquals(true, cont.displayPopup);
+    }
+    
+    // block test for a search case
+    
+    @isTest public static void testsSelectSearch(){
+        
+    	VFContactController cont = new VFContactController();
+        cont.searchName = null;
+        cont.selectSearch();
+    	System.AssertEquals(null, cont.selectSearch(), 'searchProductName');    	
+	}
+    
+    
+    @isTest public static void testAddProduct(){
+        
+        VFContactController cont = new VFContactController();
+        
+        List<Contact> beforeAdd = new List<Contact>();
+    	List<Contact> afterAdd = new List<Contact>();
+        
+        beforeAdd = [
+            SELECT 	Id 
+            FROM 	Contact
+        ];
+        
+        // Account is blank
+        
+        cont.inAccount='';
+        cont.inFirstName = 'FirstName1'; 
+        cont.inLastName = 'LastName';
+        cont.inEmail = 'Email@mail.com';
+        cont.inPhone = '+123456';
+        cont.inContactLevel = 'Primary';  
+        cont.saveNewContact();
+        
+        cont.saveNewContact();
+        
+        // Account is not blank
+        
+        cont.inAccount='Name';
+        cont.inFirstName = 'FirstName'; 
+        cont.inLastName = 'LastName';
+        cont.inEmail = 'Email@mail.com';
+        cont.inPhone = '+123456';
+        cont.inContactLevel = 'Primary';
+        
+        cont.saveNewContact();
+        
+        
+    	afterAdd = [
+            SELECT  Id 
+            FROM 	Contact
+        ];
+        
+        System.AssertNotEquals(afterAdd, beforeAdd, 'Add method test.');
+        
+        //required field is empty or incorrect 
+        
+        cont.inLastName = '';
+        cont.inEmail = '';
+        cont.saveNewContact();
+        System.AssertEquals(true, cont.detectMess, 'ADD Error');
+    }
+    
+    // this method make drop-down list 
+    
+    @isTest public static void testGetItems(){
+       VFContactController cont = new VFContactController();
+       cont.getItems();
+    }
+         
+}

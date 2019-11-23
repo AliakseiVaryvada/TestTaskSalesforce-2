@@ -1,0 +1,374 @@
+public with sharing class VFContactController {
+    
+    public List<Contact> results { get; set; } //Main list with sobjects
+    
+    public Integer counter		 = 0; //keeps track of the offset
+	public Integer listSize	     = 10; //sets the page size or number of rows
+	public Integer totalSize	 = 0; //used to show user the total size of the list
+	public String sortOrder		 = 'Name'; // Var. and default value for order sort
+	public String sortDirection	 = 'DESC'; // Var. and default value for sort direction
+	public String query			 = null; //This var used for change table mode in search . Null-full table.
+	public String lim			 = String.valueOf(listSize); //string value for dynamic query
+	public String count			 = String.valueOf(counter); //string value for dynamic query
+	public Boolean detectMess	 = false; // Var. for check exception and message. Used in test.
+	
+	
+	public String inFirstName { get; set; } // var for add products
+	public String inLastName { get; set; }
+	public String inEmail { get; set; }
+	public String inPhone { get; set; }
+	public String inAccount { get; set; }
+	public String inContactLevel { get; set; }
+	public String contactId { get; set; } // var for delete with name
+	public String searchName { get; set; } // name for search
+	public Integer rowSize { get; set; } // User input rows number
+	public Integer goPage { get; set; } //user input for change page
+	public Boolean displayPopup { get; set; }
+    
+	// GET CONTACTS LIST ----------------------------------------------------------
+
+	public List<Contact> getContact() {
+		//fill main list
+
+		if(query == null) {
+			// if query is empty => search not active
+			results = Database.query(
+                	'SELECT Id, Name, Email, Contact_Level__c, AccountId, OwnerId, CreatedById, CreatedDate ' +
+					'FROM Contact ' +
+					'ORDER BY ' + sortOrder + ' ' + sortDirection + ' ' +
+					'LIMIT ' + lim + ' ' +
+					'OFFSET ' + count
+            );
+
+			totalSize = [
+                SELECT count() 
+                FROM Contact
+            ];
+            
+		} else {
+			results = Database.query(query); // search case
+		}
+		return results;
+	}
+
+	// DELETE CONTACT METHOD -------------------------------------------------
+
+	public void delContact() {
+		detectMess = false;
+        
+		if(contactId == null) {
+            detectMess = true;
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.WARNING, 'Oops! Error delete.'));
+		} else {
+            
+			Contact delCnt = [
+                	SELECT ID
+					FROM   Contact
+					WHERE  ID = :contactId
+			];
+            
+			delete delCnt;
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM, 'Success! Your product has been deleted.'));
+		}
+
+	}
+
+	// SAVE AFTER EDIT--------------------------------------------------------------
+
+	public void saveRecordsAfterEdit() {
+		//save after edit
+			update results;
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM, 'Success! Save completed.'));
+	}
+
+	// POPUP BLOCK ----------------------------------------------
+
+	public void closePopup() {
+		displayPopup = false;
+	}
+	public void showPopup() {
+		displayPopup = true;
+	}
+
+	public List<SelectOption> getItems() {
+		List<SelectOption> options = new List<SelectOption>();
+        
+		options.add(new SelectOption('--None--', '--None--'));
+		options.add(new SelectOption('Primary', 'Primary'));
+		options.add(new SelectOption('Secondary', 'Secondary'));
+		options.add(new SelectOption('Tertiary', 'Tertiary'));
+
+		return options;
+	}
+
+	// ADD CONTACT BLOCK-----------------------------------------------------
+
+
+	public pageReference saveNewContact() {
+		// add Contact method
+		detectMess = false;
+        
+		try{
+
+			if(inAccount == '') {
+				//account case
+
+				Contact added = new Contact(
+                    FirstName        = inFirstName, 
+					LastName         = inLastName, 
+					Email            = inEmail, 
+					Phone            = inPhone, 
+					Contact_Level__c = inContactLevel
+                 );
+
+				insert added;
+			} else {
+				//account empty case
+
+				Account newAcc = new Account(Name = inAccount);
+				insert newAcc;
+
+				Contact added = new Contact(
+                    FirstName        = inFirstName, 
+					LastName         = inLastName, 
+					Email            = inEmail, 
+					Phone            = inPhone, 
+					Contact_Level__c = inContactLevel, 
+					AccountID        = newAcc.id
+                );
+                
+				insert added;
+			}
+
+
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM, 'Success! Your contact ' + inFirstName +
+                                                       ' '+ inLastName + ' added.'));
+			
+
+		} catch(Exception ex) {
+
+            detectMess = true;
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.ERROR, 'Please, edit fields with error and retry.'));
+		
+		}
+        	        
+		return null;
+	}
+
+
+	// PAGINARION BLOCK ---------------------------------------------
+
+
+	public Integer getTotalSize() {
+		//total size table. For pagination
+		return totalSize;
+	}
+
+	public Integer getPageNumber() {
+		// number current page. Pagination
+		return counter / listSize + 1;
+	}
+
+	public Integer getTotalPages() {
+		// Total pages.Pagination
+		return (math.mod(totalSize, listSize) > 0)
+			? (totalSize / listSize + 1)
+			: (totalSize / listSize);
+	}
+
+	//this will disable the previous and beginning buttons in pagination
+	public Boolean getDisablePrevious() {
+        
+		return (counter > 0) ? false : true;
+	}
+
+	public Boolean getDisableNext() {
+		//this will disable the next and end buttons
+		
+		return (counter + listSize < totalSize) ? false : true;
+	}
+
+
+	public PageReference Beginning() {
+		//user clicked beginning
+		
+		counter = 0;
+		count = String.valueOf(counter);
+		if(query != null) selectSearch();
+		return null;
+	}
+
+	public PageReference Previous() {
+		//user clicked previous button
+		
+		counter -= listSize;
+		count = String.valueOf(counter);
+		if(query != null) selectSearch();
+		return null;
+	}
+
+	public PageReference Next() {
+		//user clicked next button
+		
+		counter += listSize;
+		count = String.valueOf(counter);
+		if(query != null) selectSearch();
+		return null;
+	}
+
+	public PageReference End() {
+		//user clicked end
+		
+		counter = totalSize - math.mod(totalSize, listSize);
+		count = String.valueOf(counter);
+		if(query != null) selectSearch();
+		return null;
+    }
+
+	public PageReference selectSearch() {
+		// this method used for padination and sort in main table in search cases
+		
+		if(!String.isBlank(searchName))
+			searchContactName();
+        return null;
+	}
+
+	// CUSTOM SIZE TABLE ------------------------------------------------------------------
+
+	// method for customs size table set
+	public void rowSizeSet() {
+        
+		detectMess = false;
+		if(rowSize > 2 && rowSize < 51) {
+			listSize = rowSize;
+			lim = String.valueOf(rowSize);
+			getTotalPages();
+		} else {
+			detectMess = true;
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.ERROR, 'Please select size from 3 to 50'));
+		}
+		if(query != null) selectSearch();
+	}
+
+	// GO TO PAGE ------------------------------------------------------------------------
+
+	public PageReference goToPage() {
+		//user enter page number
+
+		counter = (goPage - 1) * listSize;
+		if(counter > totalSize || counter < 0) {
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.ERROR, 'Wrong page number. Try again.'));
+			counter = 1;
+			count = String.valueOf(counter);
+
+		} else {
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.CONFIRM, 'You page :'));
+			count = String.valueOf(counter);
+
+		}
+		if(query != null) selectSearch();
+		return null;
+	}
+	// SORT METHODS ------------------------------------------------------
+
+	public void sortChange() {
+        if (sortDirection == 'asc') {
+            (sortDirection = 'desc');
+        } else { 
+            if (sortDirection == 'desc') 
+                (sortDirection = 'asc');
+        }	
+	}
+
+
+	public void sortByName() {
+		sortChange();
+		this.sortOrder = 'Name';
+        if(query != null) selectSearch();
+	}
+
+	public void sortByEmail() {
+		sortChange();
+		this.sortOrder = 'Email';
+		if(query != null) selectSearch();
+
+	}
+    
+	public void sortByContactLevel() {
+		sortChange();
+		this.sortOrder = 'Contact_Level__c';
+		if(query != null) selectSearch();
+	}
+    
+	public void sortByAccountId() {
+		sortChange();
+		this.sortOrder = 'AccountId';
+        if(query != null) selectSearch();
+		
+	}
+    
+	public void sortByOwnerId() {
+		sortChange();
+		this.sortOrder = 'OwnerId';
+		if(query != null) selectSearch();
+        
+	}
+    
+	public void sortByCreatedById() {
+		sortChange();
+		this.sortOrder = 'CreatedById';
+		if(query != null) selectSearch();
+	}
+    
+	public void sortByCreatedDate() {
+		sortChange();
+		this.sortOrder = 'CreatedDate';
+        if(query != null) selectSearch();
+	}
+
+	// RETURN TO FULL TABLE BUTTON ------------------------------------------------------------
+
+	public void goFullTable() {
+		// full table button. Just fill main list and pagination value for default
+		query        = null;
+		counter      = 0;
+		listSize     = 10;
+		totalSize    = 0;
+        
+		getContact();
+	}
+
+	//SEARCH METHOD -------------------------------------------------------------
+
+	public void searchContactName() {
+        detectMess = false;
+		if(!String.isBlank(searchName)) {
+            
+			query = (
+                'SELECT Id, Name, Email, Contact_Level__c, AccountId, OwnerId, CreatedById, CreatedDate ' +
+				'FROM Contact ' +
+				'WHERE Name LIKE \'%' + searchName + '%\'' +
+				'ORDER BY ' + sortOrder + ' ' + sortDirection + ' ' +
+				'LIMIT ' + lim + ' ' +
+				'OFFSET ' + count
+            );
+            
+			getContact();
+			// recount totalsize
+			totalSize = Database.countQuery(
+                		'SELECT count() ' +
+						'FROM Contact ' +
+						'WHERE Name ' +
+						'LIKE \'%' + searchName + '%\''
+            );
+
+		} else {
+            detectMess = true;
+			ApexPages.addmessage(new ApexPages.message(ApexPages.severity.WARNING, 'Please, enter search name or press "Jump to full table".'));
+		}
+
+	}
+
+
+
+}

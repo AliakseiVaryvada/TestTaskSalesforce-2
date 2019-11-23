@@ -1,0 +1,52 @@
+trigger TriggerContactCase on Contact (after insert, before delete) {
+	if (Trigger.isInsert) {
+        
+        List<Case> caseList = new List<Case>();
+        
+        for(Contact c : trigger.new) {
+            
+            Case newCase = new Case();
+            
+            newCase.Status = 'Working';
+			newCase.Origin = 'New Contact';
+			newCase.ContactId = c.Id;
+            
+            switch on c.Contact_Level__c {
+                when 'Primary' {       
+                    newCase.Priority = 'High';
+                }    
+                when 'Secondary' {       
+                    newCase.Priority = 'Medium';
+                }        
+                   
+                when 'Tertiary' {        
+                     newCase.Priority = 'Low';
+                }
+            }
+            
+            if (c.AccountId != null){
+                
+                newCase.AccountId = c.AccountId;
+                List<Account> findOwner = [SELECT OwnerId 
+                                   		   FROM Account 
+                                           WHERE Id =: newCase.AccountId];
+                
+                newCase.OwnerId = findOwner[0].OwnerId;
+            }
+            
+            caseList.add(newCase);
+        }
+        
+        insert caseList;
+        
+    } else if (Trigger.isDelete){
+
+         List<Case> delCaseList = [SELECT Id
+                  				   FROM Case
+                  				   WHERE ContactId IN :Trigger.Old];
+        
+         if(delCaseList!=null && delCaseList.size()!=0){
+         delete delCaseList;
+         }
+     }  
+}

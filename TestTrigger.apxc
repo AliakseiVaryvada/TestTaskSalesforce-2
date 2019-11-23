@@ -1,0 +1,116 @@
+@isTest public class TestTriggerContactCase {
+	@isTest
+    static void TestContactCase(){
+        Boolean isEmptyList = false;
+        
+        //Make and delete Priority Case.
+        
+        Contact testCont = new Contact(
+                           FirstName        = 'TestName', 
+						   LastName         = 'TestLastName', 
+                           Email            = 'Test@email.com',
+						   Contact_Level__c = 'Primary' 
+        );
+        
+		insert testCont;
+
+        List<Case> testCase = [
+            SELECT 	ContactID, Priority 
+            FROM 	Case 
+            WHERE 	ContactID = :testCont.id
+        ];
+        
+        System.AssertEquals('High', testCase[0].Priority); 
+        delete testCont;
+        
+        testCase = [
+            SELECT 	ContactID, Priority 
+            FROM 	Case 
+            WHERE 	ContactID = :testCont.id
+        ];
+        
+        isEmptyList = testCase.isEmpty();
+        System.AssertEquals( true, isEmptyList);
+        
+         //Make and delete Secondary Case.
+        
+        testCont = new Contact(
+            	   FirstName        = 'TestName', 
+				   LastName         = 'TestLastName', 
+                   Email            = 'Test@email.com',
+				   Contact_Level__c = 'Secondary' 
+        );
+        
+		insert testCont;
+        
+        testCase = [
+            		SELECT 	ContactID, Priority 
+                    FROM 	Case 
+                    WHERE 	ContactID = :testCont.id
+        ];
+        
+        System.AssertEquals('Medium', testCase[0].Priority); 
+        delete testCont;
+        
+        testCase = [
+            		SELECT 	ContactID, Priority 
+                    FROM 	Case 
+                    WHERE 	ContactID = :testCont.id
+        ];
+        
+        isEmptyList = testCase.isEmpty();
+        System.AssertEquals( true, isEmptyList);
+        
+         //Make and delete Tertiary Case.
+        
+        testCont = new Contact(
+            	   FirstName        = 'TestName', 
+				   LastName         = 'TestLastName', 
+                   Email            = 'Test@email.com',
+				   Contact_Level__c = 'Tertiary' 
+        );
+        
+		insert testCont;
+        
+        testCase = [
+            		SELECT ContactID, Priority 
+                    FROM Case 
+                    WHERE ContactID = :testCont.id
+        ];
+        
+        System.AssertEquals('Low', testCase[0].Priority); 
+        delete testCont;
+        
+        testCase = [
+            		SELECT 	ContactID, Priority 
+                    FROM 	Case 
+                    WHERE 	ContactID = :testCont.id
+        ];
+        
+        isEmptyList = testCase.isEmpty();
+        System.AssertEquals( true, isEmptyList);
+        
+        //Make Contact for check Account create.
+        
+        Account acc = new Account (Name = 'Test');
+        insert acc;
+        
+        testCont = new Contact(
+            	   FirstName        = 'TestName', 
+				   LastName         = 'TestLastName', 
+                   Email            = 'Test@email.com',
+				   Contact_Level__c = 'Tertiary',
+                   AccountID 		= acc.id    
+        );
+        
+		insert testCont;
+        
+        testCase = [
+            		SELECT 	AccountID 
+                    FROM 	Case 
+                    WHERE 	ContactID = :testCont.id
+        ];
+        
+        System.AssertEquals(acc.id, testCase[0].AccountID); 
+		}
+}

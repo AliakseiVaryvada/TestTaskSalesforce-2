@@ -1,0 +1,487 @@
+<apex:page controller="VFContactController" docType="html-5.0">
+    <apex:slds />
+    <html xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" lang="en">
+
+    <head>
+    </head>
+
+
+    <style>
+        /* This is for the full screen DIV */
+
+        .popupBackground {
+            /* Background color */
+            background-color: black;
+            opacity: 0.20;
+            filter: alpha(opacity=20);
+
+            /* Dimensions */
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 998;
+            position: absolute;
+
+            /* Mouse */
+            cursor: wait;
+        }
+
+        /* This is for the message DIV */
+
+        .PopupPanel {
+
+            /* Dimensions */
+            left: 43%;
+            top: 20%;
+            height: 50px;
+            margin-top: -25px;
+            z-index: 999;
+            position: fixed;
+
+            /* Mouse */
+            cursor: pointer;
+        }
+
+        .custPopup {
+            background-color: #b4c9f0;
+            border: solid #4d76bf;
+            border-radius: 30px;
+            font-family: Salesforce Sans;
+            font-size: 120%;
+            z-index: 9999;
+            left: 30%;
+            padding: 10px;
+            position: absolute;
+            width: 40%;
+            box-shadow: 0px 0px 32px -7px rgba(19, 96, 148, 1);
+            top: 15%;
+        }
+
+        .popupBackground {
+            background-color: black;
+            opacity: 0.20;
+            filter: alpha(opacity=20);
+            position: absolute;
+            width: 100%;
+            height: 150%;
+            top: 0;
+            left: 0;
+            z-index: 9998;
+        }
+    </style>
+
+    <!--Loading block-->
+    <apex:actionStatus id="statusSaveTrip" stopText="">
+        <apex:facet name="start">
+            <div>
+                <div class="popupBackground" />
+                <div class="PopupPanel">
+                    <table border="0" width="100%" height="100%">
+                        <tr>
+                            <td align="center">
+                                <img src="{!$Resource.loader}" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </apex:facet>
+    </apex:actionStatus>
+
+
+    <apex:form id="formlevel">
+
+        <apex:pageBlock title="Contact List"
+            id="thisblock" 
+            mode="inlineedit">
+
+            <apex:pageMessages id="showmsg"></apex:pageMessages>
+
+            <apex:outputPanel id="mainPanel">
+                <!--Main table-->
+
+                <apex:pageBlockTable value="{!Contact}" 
+                    var="row" 
+                    id="thisTable">
+
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink reRender="mainPanel" 
+                                status="statusSaveTrip"> Delete
+                            </apex:commandLink>
+                        </apex:facet>
+
+
+                        <apex:commandButton action="{!delContact}" 
+                            title=" Delete current record " 
+                            value=" Del " 
+                            reRender="thisblock" 
+                            rendered="true"
+                            onclick="if(!confirm('You are trying to delete the entry. Are you sure?')){return false};" 
+                            styleclass="slds-button slds-button_destructive">
+
+                            <apex:param name="contactId"
+                                assignTo="{!contactId}" 
+                                value="{!row.Id}" />
+                        </apex:commandButton>
+
+                    </apex:column>
+
+
+                    <apex:column >
+
+                        <apex:facet name="header">
+
+                            <apex:commandLink action="{!sortByName}"
+                                reRender="mainPanel" 
+                                status="statusSaveTrip"> Full Name
+                            </apex:commandLink>
+
+                        </apex:facet>
+
+                        <apex:outputField value="{!row.Name}">
+
+                            <apex:inlineEditSupport changedStyleClass="dirtyField" 
+                                event="ondblclick" 
+                                resetFunction="resetInlineEdit" />
+                        </apex:outputField>
+
+                    </apex:column>
+
+                    <apex:column >
+                        
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortByEmail}" 
+                                reRender="mainPanel" 
+                                status="statusSaveTrip"> E-mail
+                            </apex:commandLink>
+                        </apex:facet>
+
+                        <apex:outputField value="{!row.Email}">
+                            <apex:inlineEditSupport changedStyleClass="dirtyField" 
+                                event="ondblclick" 
+                                resetFunction="resetInlineEdit" />
+                        </apex:outputField>
+
+                    </apex:column>
+
+
+                    <apex:column >
+
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortByContactLevel}" 
+                                reRender="mainPanel" 
+                                status="statusSaveTrip"> Contact Level
+                            </apex:commandLink>
+                        </apex:facet>
+
+                        <apex:outputField value="{!row.Contact_Level__c}">
+                            <apex:inlineEditSupport changedStyleClass="dirtyField" 
+                                event="ondblclick" 
+                                resetFunction="resetInlineEdit" />
+                        </apex:outputField>
+
+                    </apex:column>
+
+                    <apex:column >
+
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortByAccountId}" 
+                                reRender="mainPanel" 
+                                status="statusSaveTrip"> Account Id
+                            </apex:commandLink>
+                        </apex:facet>
+
+                        <apex:outputField value="{!row.AccountId}">
+                            <apex:inlineEditSupport changedStyleClass="dirtyField" 
+                                event="ondblclick" 
+                                resetFunction="resetInlineEdit" />
+                        </apex:outputField>
+
+                    </apex:column>
+
+                    <apex:column >
+
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortByOwnerId}" 
+                                reRender="mainPanel" 
+                                status="statusSaveTrip"> Owner Id
+                            </apex:commandLink>
+                        </apex:facet>
+
+                        <apex:outputField value="{!row.OwnerId}">
+                            <apex:inlineEditSupport changedStyleClass="dirtyField" 
+                                event="ondblclick" 
+                                resetFunction="resetInlineEdit" />
+                        </apex:outputField>
+
+                    </apex:column>
+
+
+                    <apex:column >
+
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortByCreatedById}" 
+                                reRender="mainPanel" 
+                                status="statusSaveTrip"> Created By
+                            </apex:commandLink>
+                        </apex:facet>
+
+                        <apex:outputField value="{!row.CreatedById}">
+                            <apex:inlineEditSupport changedStyleClass="dirtyField" 
+                                event="ondblclick" 
+                                resetFunction="resetInlineEdit" />
+                        </apex:outputField>
+
+                    </apex:column>
+
+
+                    <apex:column >
+
+                        <apex:facet name="header">
+                            <apex:commandLink action="{!sortByCreatedDate}" 
+                                reRender="mainPanel" 
+                                status="statusSaveTrip"> Created Date
+                            </apex:commandLink>
+                        </apex:facet>
+
+                        <apex:outputField value="{!row.CreatedDate}">
+                            <apex:inlineEditSupport changedStyleClass="dirtyField"
+                                event="ondblclick" 
+                                resetFunction="resetInlineEdit" />
+                        </apex:outputField>
+
+                    </apex:column>
+
+                    <apex:facet name="footer">
+                        Showing Page : {!pageNumber} of {!totalPages} 
+                    </apex:facet>
+
+                </apex:pageBlockTable>
+
+            </apex:outputPanel>
+
+            <div class="slds-grid slds-grid_align-spread">
+
+                <div class="slds-col">
+
+                    <apex:commandButton action="{!saveRecordsAfterEdit}" 
+                        id="saveButton" 
+                        value="Save changes" 
+                        styleClass="slds-button slds-button_brand"
+                        style="width:230px;"
+                        title="1)Make double tap on the field 2)Make changes 3)Press Save button"/>
+
+                </div>
+
+                <div class = "slds-col slds-button-group">
+
+                    <apex:outputPanel id="blockButtons">
+
+                        <apex:commandButton action="{!Beginning}" 
+                            title="Beginning" 
+                            disabled="{!disablePrevious}" 
+                            value="<<" 
+                            reRender="mainPanel,blockButtons"
+                            styleClass="slds-button slds-button_success" 
+                            status="statusSaveTrip" />
+
+                        <apex:commandButton action="{!Previous}" 
+                            title="Previous" 
+                            disabled="{!disablePrevious}" 
+                            value="<" 
+                            reRender="mainPanel,blockButtons"
+                            styleClass="slds-button slds-button_brand"
+                            status="statusSaveTrip" />
+
+                        <apex:commandButton action="{!Next}" 
+                            title="Next" 
+                            disabled="{!disableNext}" 
+                            value      = ">" 
+                            reRender   = "mainPanel,blockButtons" 
+                            styleClass = "slds-button slds-button_brand"
+                            status     = "statusSaveTrip" />
+
+                        <apex:commandButton action="{!End}" 
+                            title="End" 
+                            disabled="{!disableNext}" 
+                            value      = ">>" 
+                            reRender   = "mainPanel,blockButtons" 
+                            styleClass = "slds-button slds-button_success"
+                            status     = "statusSaveTrip" />
+
+                    </apex:outputPanel>
+
+                </div>
+
+                <div class="slds-col">
+
+                    <apex:inputText label="Go to page:"
+                        value="{!goPage}" 
+                        html-placeholder="Page" 
+                        styleClass="slds-input" 
+                        style="width:70px;"
+						title="Enter page number and press Go"/>
+
+                    <apex:commandButton action="{!goToPage}" 
+                        value="Go" 
+                        html-placeholder="Page number" 
+                        styleClass="slds-button slds-button_brand"
+                        status="statusSaveTrip" rerender="formlevel" />
+
+                    <apex:outputPanel id="rowSize">
+
+                        <apex:inputText value="{!rowSize}" 
+                            html-placeholder="Size" 
+                            styleClass="slds-input" 
+                            style="width:70px;" 
+                            title="Enter quanitiy rows in list and press Set"/>
+
+                        <apex:commandButton action="{!rowSizeSet}" 
+                            value="Set" 
+                            html-placeholder="Size" 
+                            styleClass="slds-button slds-button_brand"
+                            status="statusSaveTrip" rerender="formlevel" />
+
+                    </apex:outputPanel>
+
+                </div>
+
+            </div>
+
+
+        </apex:pageBlock>
+
+        <apex:pageBlock title="Add Contact">
+
+            <apex:commandButton value="Add New Contact" 
+                action="{!showPopup}" 
+                rerender="tstpopup" 
+                styleClass="slds-button slds-button_success slds-align_absolute-center"/>
+
+            <apex:outputPanel id="tstpopup">
+
+                <apex:outputPanel styleClass="popupBackground" 
+                    layout="block" 
+                    rendered="{!displayPopUp}" />
+
+                <apex:outputPanel styleClass="custPopup" 
+                    layout="block" 
+                    rendered="{!displayPopUp}">
+
+                    <apex:pageMessages id="showmsg"></apex:pageMessages>
+
+                    <p align="center"> Welcome to the Add Block!!
+                        <br/> Fill the following fields and press Save button to add a contact.
+                        <br/> Required fields are marked with (*).
+                        <br/> Have a nice day!</p>
+                    <br/>
+                    <br/>
+
+                    <div class="slds-grid slds-grid_align-spread">
+
+                        <apex:pageBlockSection columns="2">
+
+                            <apex:inputText label="First Name" 
+                                value="{!inFirstName}" 
+                                html-placeholder="First Name" 
+                                styleClass="slds-input" />
+
+                            <apex:inputText label="Last Name * " 
+                                value="{!inLastName}" 
+                                required="true" 
+                                html-placeholder="Last Name" 
+                                styleClass="slds-input"/>
+
+                            <apex:inputText label="E-mail * " 
+                                value="{!inEmail}" 
+                                required="true" 
+                                html-placeholder="E-mail" 
+                                styleClass="slds-input"/>
+
+                            <apex:inputText label="Phone" 
+                                value="{!inPhone}" 
+                                html-placeholder="Phone" 
+                                styleClass="slds-input" />
+
+                            <apex:inputText label="Account" 
+                                value="{!inAccount}" 
+                                html-placeholder="Account" 
+                                styleClass="slds-input" />
+
+                            <apex:SelectList label="Contact Level" 
+                                size="1" value="{!inContactLevel}" 
+                                styleClass="slds-input slds-combobox__input">
+
+                                <apex:selectOptions value="{!items}" />
+
+                            </apex:SelectList>
+
+                        </apex:pageBlockSection>
+
+                    </div>
+
+                    <div class="slds-grid slds-grid_align-spread">
+
+                        <apex:commandButton value="Close" 
+                            immediate="true" 
+                            action="{!closePopup}" 
+                            html-formnovalidate="formnovalidate" 
+                            styleClass="slds-button slds-button_destructive slds-col"/>
+
+                        <apex:commandButton value="Save" 
+                            action="{!saveNewContact}" 
+                            rerender="showmsg" 
+                            styleClass="slds-button slds-button_success slds-col"
+                            />
+                            
+                    </div>
+
+                </apex:outputPanel>
+
+            </apex:outputPanel>
+
+        </apex:pageBlock>
+
+        <apex:pageBlock title="Search" 
+            id="search_list">
+
+            <div class="slds-grid slds-grid_align-spread">
+
+                <div class="slds-col slds-grid">
+
+                    <apex:inputText label="Name for search:" 
+                        value="{!searchName}" 
+                        html-placeholder="Name" 
+                        styleClass="slds-input"
+                        title="Enter Name for search and press Set"
+                        />
+
+                    <apex:commandButton action="{!searchContactName}" 
+                        value="Search" 
+                        styleClass="slds-button slds-button_brand" 
+                        status="statusSaveTrip"
+                        rerender="formlevel" 
+                        />
+
+                </div>
+
+                <div class="slds-col slds-grid">
+                    <apex:commandButton action="{!goFullTable}" 
+                        value="Jump to full table" 
+                        styleClass="slds-button slds-button_brand" 
+                        status="statusSaveTrip"
+                        rerender="formlevel" 
+                        title="Button for return to full Contact page."/>
+                </div>
+
+            </div>
+
+        </apex:pageBlock>
+
+    </apex:form>
+
+    </html>
+
+</apex:page>
